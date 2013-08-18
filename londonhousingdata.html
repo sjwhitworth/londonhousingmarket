@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+	path:hover{
+		fill-opacity: 0.5;
+	}
+	body{
+		background-color: white;
+	}
+
+	div.tooltip {   
+	  position: absolute;           
+	  text-align: left;           
+	  width: 650px;                  
+	  height: 28px;                 
+	  padding: 10px;             
+	  font: 22px sans-serif;     
+	  background: white;   
+	  border: 0px;      
+	  border-radius: 8px;           
+	  pointer-events: none;         
+	}
+
+</style>
+
+<body>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="http://d3js.org/topojson.v1.min.js"></script>
+<script src="http://d3js.org/colorbrewer.v1.min.js"></script>
+	<script>
+
+		var width = 1500;
+		var height = 1500;
+
+		var color = d3.scale.linear()
+			.domain([0, 350000])
+		    .range(["white", "#3498db"]);
+
+		var div = d3.select("body").append("div")
+				    .attr("class", "tooltip")
+				    .style("opacity", 0.8);
+
+		var format = d3.format(".0%")
+
+		//Create an SVG element for us to use.
+		var svg = d3.select("body").append("svg").attr("width", width).attr("height", height);
+ 
+			d3.json("statgeo.json", function(uk){
+
+						//Gets the coordinate data from our dataset.
+			            var subunits = topojson.feature(uk, uk.objects.thenewestdict1);
+
+			            //Allows us to check the validity of our data in the console.
+			            console.log(subunits);
+
+			            //Creates a projection which we can apply to the path.
+			            var projection = d3.geo.mercator()
+			                .center([-0.10,51.5171])
+			                .rotate([0,0])
+			                .scale(95000)
+			                .translate([width / 2, height / 3]);
+
+			            var path = d3.geo.path()
+			                .projection(projection);
+
+			            svg.append("g")
+			            	.attr("class", "boroughs")
+			            	.selectAll("path")
+			            	.data(topojson.feature(uk, uk.objects.thenewestdict1).features)
+			            	.enter().append("path")
+			            	.attr("d", path)
+			            	.attr("id", function(d){return d.properties.Name})
+			            	.attr("fill", function(d){return color(d.properties.population)})
+			            	.attr("stroke", "black")
+			            	.attr("stroke-width", "0.35");
+
+						 svg.selectAll("path")
+						 	.data(topojson.feature(uk, uk.objects.thenewestdict1).features)
+						 	.on("mouseover", function(d){div.transition().duration(200); 
+						 		div.html("<b>" + d.properties.Name  + "</b><br>" 
+						 			+ "Population: " + d.properties.population + "<br>" +
+						 			"Average house price: £" + d.properties.avghouseprice + "<br>"
+						 			+ "Percent renting from landlord: " + d.properties.percentrent + "<br>"
+						 			+ "New homes built 2011/2012: " + d.properties.numnewhomes + "<br>" + 
+						 			"People per new home built: " + d3.round(d.properties.peoplepernewhome))});
+    });
+	</script>
