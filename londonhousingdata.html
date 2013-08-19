@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
+<link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
 <style>
 	path:hover{
 		fill-opacity: 0.5;
@@ -8,14 +9,14 @@
 		background-color: white;
 	}
 
-	div.tooltip {   
-	  position: absolute;           
+	div.tooltip {         
 	  text-align: left;           
-	  width: 650px;                  
-	  height: 28px;                 
-	  padding: 10px;             
-	  font: 22px sans-serif;     
-	  background: white;   
+	  width: 300px;                  
+	  height: 130px;                 
+	  padding: 5px;
+	  color:white;             
+	  font: 18px sans-serif;     
+	  background: black;   
 	  border: 0px;      
 	  border-radius: 8px;           
 	  pointer-events: none;         
@@ -24,41 +25,71 @@
 </style>
 
 <body>
+<div class="container-fluid" style="padding:10px;">
 <script src="http://d3js.org/d3.v3.min.js"></script>
 <script src="http://d3js.org/topojson.v1.min.js"></script>
 <script src="http://d3js.org/colorbrewer.v1.min.js"></script>
+
+<div class="row-fluid">
+<div id="viz" class="span8"><div id="stats" style="padding:10px;">
 	<script>
 
-		var width = 1500;
-		var height = 1500;
+		var width = 1000;
+		var height = 950;
 
-		var color = d3.scale.linear()
-			.domain([0, 350000])
-		    .range(["white", "#104E8B"]);
-
-		var div = d3.select("body").append("div")
+		var div = d3.select("#stats").append("div")
 				    .attr("class", "tooltip")
+				    .attr("id", "stats")
 				    .style("opacity", 0.8);
 
-		var format = d3.format(".0%")
+		var svg = d3.select("#viz").append("svg:svg").attr("width", width).attr("height", height);
+ 		
+		var update = function(num){
 
-		//Create an SVG element for us to use.
-		var svg = d3.select("body").append("svg").attr("width", width).attr("height", height);
- 
+			d3.selectAll("g").remove();
+
+			switch(num){
+				case 0:
+					var color = d3.scale.linear()
+					.domain([150000, 350000])
+			    	.range(["white", "#104E8B"])
+			    	break;
+
+			    case 1:
+				    var color = d3.scale.linear()
+					.domain([0, 400000])
+			    	.range(["white", "#104E8B"]);
+			    	break;
+
+			    case 2:
+				    var color = d3.scale.linear()
+					.domain([0, 1000])
+			    	.range(["white", "#104E8B"]);
+			    	break;
+			    }
+
 			d3.json("statgeo.json", function(uk){
 
 						//Gets the coordinate data from our dataset.
 			            var subunits = topojson.feature(uk, uk.objects.thenewestdict1);
 
-			            //Allows us to check the validity of our data in the console.
-			            console.log(subunits);
+			            var random = function(d){
+			            		if (num == 0){
+			            			return color(d.properties.avghouseprice);	
+			            		};
+			            		if (num == 1){
+			            			return color(d.properties.population);
+			            		};
+			            		if (num == 2){
+			            			return color(d.properties.peoplepernewhome);
+			            		}};
 
 			            //Creates a projection which we can apply to the path.
 			            var projection = d3.geo.mercator()
 			                .center([-0.10,51.5171])
 			                .rotate([0,0])
-			                .scale(95000)
-			                .translate([width / 2, height / 3]);
+			                .scale(68000)
+			                .translate([width / 2, height / 2.3]);
 
 			            var path = d3.geo.path()
 			                .projection(projection);
@@ -69,19 +100,40 @@
 			            	.data(topojson.feature(uk, uk.objects.thenewestdict1).features)
 			            	.enter().append("path")
 			            	.attr("d", path)
+			            	.attr("fill", "white")
+			            	.attr("stroke", "white")
 			            	.attr("id", function(d){return d.properties.Name})
-			            	.attr("fill", function(d){return color(d.properties.population)})
-			            	.attr("stroke", "black")
-			            	.attr("stroke-width", "0.35");
+			            	.transition()
+				            	.duration(500)
+				            	.attr("fill", random)
+				            	.attr("stroke", "black")
+				            	.attr("stroke-width", "0.35");
 
 						 svg.selectAll("path")
 						 	.data(topojson.feature(uk, uk.objects.thenewestdict1).features)
-						 	.on("mouseover", function(d){div.transition().duration(200); 
+						 	.on("mouseover", function(d){
 						 		div.html("<b>" + d.properties.Name  + "</b><br>" 
 						 			+ "Population: " + d.properties.population + "<br>" +
 						 			"Average house price: £" + d.properties.avghouseprice + "<br>"
 						 			+ "Percent renting from landlord: " + d.properties.percentrent + "<br>"
 						 			+ "New homes built 2011/2012: " + d.properties.numnewhomes + "<br>" + 
 						 			"People per new home built: " + d3.round(d.properties.peoplepernewhome))});
-    });
+    })
+	};
+
+	update(0);
 	</script>
+</div></div>
+<br>
+
+<div class="span4">
+<h1>Visualising the London housing market in D3.JS</h1>
+<hr>
+
+<p>An introductory lesson into mapping and displaying data with D3, using freely available 2011/2012 Census data. All of the data, Javascript and HTML is available on my <a href="http://www.github.com/sjwhitworth">Github.</a> Please feel free to get at me on Twitter with any questions - my handle is <a href="http://www.twitter.com/sjwhitworth">@sjwhitworth.</a><br><br>
+
+Click the buttons below to change the color density mapping, and hover over each borough to see statistics.<p><br>
+
+<button class="btn btn-primary btn-small" onclick="update(0)">Average House Price</button> <button class="btn btn-primary btn-small" onclick="update(1)">Population</button> <button class="btn btn-primary btn-small" onclick="update(2)">People Per New House</button>
+
+<div class="tooltip">
